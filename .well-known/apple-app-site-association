@@ -5,20 +5,6 @@
             "appIDs": [ "374PS4VZU3.com.example.testapp9100" ],
             "components": [
                {
-                  "#": "no_universal_links",
-                  "exclude": true,
-                  "comment": "Matches any URL with a fragment that equals no_universal_links and instructs the system not to open it as a universal link."
-               },
-               {
-                  "/": "*",
-                  "comment": "Matches any URL with a path that starts with /buy/."
-               },
-               {
-                  "/": "/help/website/*",
-                  "exclude": true,
-                  "comment": "Matches any URL with a path that starts with /help/website/ and instructs the system not to open it as a universal link."
-               },
-               {
                   "/": "/index.html",
                   "comment": "Matches any URL with a path that starts with /help/ and that has a query item with name 'articleNumber' and a value of exactly four characters."
                }
@@ -28,8 +14,5 @@
    },
    "webcredentials": {
       "apps": [ "374PS4VZU3.com.example.testapp9100" ]
-   },
-   "appclips": {
-      "apps": ["374PS4VZU3.com.example.testapp9100"]
    }
  }
