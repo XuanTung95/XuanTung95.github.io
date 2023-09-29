@@ -1,0 +1,10 @@
+{
+  "applinks": {
+      "details": [
+           {
+             "appIDs": [ "5PY222GR5N.com.l-a.hermes.prod", "5PY222GR5N.com.aaron.hermesFlutter" ],
+             "components": []
+           }
+       ]
+   }
+}
