@@ -1,9 +1,18 @@
 {
   "applinks": {
+      "apps": [],
       "details": [
            {
-             "appIDs": [ "5PY222GR5N.com.l-a.hermes.prod", "5PY222GR5N.com.aaron.hermesFlutter", "374PS4VZU3.com.example.testapp9100" ],
-             "components": []
+             "appID": "5PY222GR5N.com.l-a.hermes.prod",
+             "paths": [ "*" ]
+           },
+           {
+            "appID": "5PY222GR5N.com.aaron.hermesFlutter",
+            "paths": [ "*" ]
+           },
+           {
+            "appID": "374PS4VZU3.com.example.testapp9100",
+            "paths": [ "*" ]
            }
        ]
    }
