@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.aaron.hermes_flutter",
+    "sha256_cert_fingerprints":
+    ["24:61:3E:C4:0A:CD:4A:AB:BD:FF:C3:97:2C:1A:43:D6:7C:3C:84:62:5D:E3:A9:7A:85:8B:B0:8C:CE:32:89:44"]
+  }
+}]
+
