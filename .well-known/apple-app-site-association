@@ -2,17 +2,17 @@
    "applinks": {
       "details": [
          {
-            "appIDs": [ "374PS4VZU3.com.example.testapp9100" ],
+            "appIDs": [ "7B432Q3AMA.com.aaron.hermesFlutter", "7B432Q3AMA.com.l-a.hermes.prod" ],
             "components": [
                {
-                  "/": "/index.html",
-                  "comment": "Matches any URL with a path that starts with /help/ and that has a query item with name 'articleNumber' and a value of exactly four characters."
+                  "/": "/download_app.html",
+                  "comment": "Download app url"
                }
             ]
          }
       ]
    },
    "webcredentials": {
-      "apps": [ "374PS4VZU3.com.example.testapp9100" ]
+      "apps": [ "7B432Q3AMA.com.l-a.hermes.prod" ]
    }
  }
