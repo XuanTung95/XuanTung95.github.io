@@ -2,7 +2,7 @@
    "applinks": {
       "details": [
          {
-            "appIDs": [ "7B432Q3AMA.com.aaron.hermesFlutter", "7B432Q3AMA.com.l-a.hermes.prod" ],
+            "appIDs": [ "374PS4VZU3.com.meeymap.app.new.tungpx"],
             "components": [
                {
                   "/": "/download_app.html",
@@ -13,6 +13,6 @@
       ]
    },
    "webcredentials": {
-      "apps": [ "7B432Q3AMA.com.l-a.hermes.prod" ]
+      "apps": []
    }
  }
