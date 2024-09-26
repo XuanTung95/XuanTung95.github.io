@@ -3,12 +3,7 @@
       "details": [
          {
             "appIDs": [ "374PS4VZU3.com.meeymap.app.new.tungpx"],
-            "components": [
-               {
-                  "/": "/download_app.html",
-                  "comment": "Download app url"
-               }
-            ]
+            "paths": ["*"]
          }
       ]
    },
