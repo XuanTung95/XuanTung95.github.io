@@ -6,6 +6,60 @@
     "sha256_cert_fingerprints":
     ["24:61:3E:C4:0A:CD:4A:AB:BD:FF:C3:97:2C:1A:43:D6:7C:3C:84:62:5D:E3:A9:7A:85:8B:B0:8C:CE:32:89:44"]
   }
+},
+{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.meeymap.app",
+    "sha256_cert_fingerprints":
+    ["24:61:3E:C4:0A:CD:4A:AB:BD:FF:C3:97:2C:1A:43:D6:7C:3C:84:62:5D:E3:A9:7A:85:8B:B0:8C:CE:32:89:44"]
+  }
+},
+{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.meeymap.app",
+    "sha256_cert_fingerprints":
+    ["03:DE:68:9E:71:87:FB:E0:B1:57:E1:09:4F:99:08:6C:25:37:70:72:5A:68:B6:81:08:95:1F:81:65:E2:4E:82"]
+  }
+},
+{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.meeymap.app",
+    "sha256_cert_fingerprints":
+    ["98:28:D4:5B:EC:D1:6C:41:9A:E3:F5:C8:DB:FB:36:81:3D:31:86:1D:0B:70:ED:2C:17:35:B5:71:0A:D4:EE:9F"]
+  }
+},
+{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.meeymap.app.beta",
+    "sha256_cert_fingerprints":
+    ["93:EA:47:15:F7:5A:CF:59:E7:13:8C:18:EA:56:E1:EC:8C:52:D5:A5:CC:9D:D6:FF:A9:D2:50:EE:46:8E:7B:F9"]
+  }
+},
+{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.meeymap.app.beta.dev",
+    "sha256_cert_fingerprints":
+    ["93:EA:47:15:F7:5A:CF:59:E7:13:8C:18:EA:56:E1:EC:8C:52:D5:A5:CC:9D:D6:FF:A9:D2:50:EE:46:8E:7B:F9"]
+  }
+},
+{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.meeymap.app.beta.stg",
+    "sha256_cert_fingerprints":
+    ["93:EA:47:15:F7:5A:CF:59:E7:13:8C:18:EA:56:E1:EC:8C:52:D5:A5:CC:9D:D6:FF:A9:D2:50:EE:46:8E:7B:F9"]
+  }
 }
 ]
 
