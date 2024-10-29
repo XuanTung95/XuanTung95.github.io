@@ -60,6 +60,15 @@
     "sha256_cert_fingerprints":
     ["93:EA:47:15:F7:5A:CF:59:E7:13:8C:18:EA:56:E1:EC:8C:52:D5:A5:CC:9D:D6:FF:A9:D2:50:EE:46:8E:7B:F9"]
   }
+},
+{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.example.test_fb_deep_link",
+    "sha256_cert_fingerprints":
+    ["93:EA:47:15:F7:5A:CF:59:E7:13:8C:18:EA:56:E1:EC:8C:52:D5:A5:CC:9D:D6:FF:A9:D2:50:EE:46:8E:7B:F9"]
+  }
 }
 ]
 
