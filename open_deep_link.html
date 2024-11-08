@@ -14,6 +14,7 @@
 
             // Đường dẫn deeplink của app và link đến App Store/Play Store
             const appLink = "appname://path";  // Thay bằng deeplink của app
+            const mylink = "intent://s.lazada.vn/s.fEctS?dsource=smb&dauto=1&dfrom=share&from_share_link=1&laz_share_info=1389597274_10_100_0_1389599274_null#Intent;scheme=lazada;end";
             const storeLink = isIOS 
                 ? "meeymap://apps.apple.com/app/id123456789" // Thay bằng ID của ứng dụng trên App Store
                 : "meeymap://play.google.com/store/apps/details?id=com.yourapp"; // Thay bằng package name trên Play Store
@@ -21,11 +22,11 @@
             // Đặt thời gian chờ để xác định nếu ứng dụng không mở
             const timeout = setTimeout(() => {
                 // window.location.href = storeLink;
-                window.location.href = "intent://s.lazada.vn/s.fEctS?dsource=smb&dauto=1&dfrom=share&from_share_link=1&laz_share_info=1389597274_10_100_0_1389599274_null#Intent;scheme=lazada;end";
+                window.location.href = mylink;
             }, 1500);
 
             // Thử mở ứng dụng qua deeplink
-            window.location.href = appLink;
+            window.location.href = mylink;
 
             // Nếu ứng dụng mở thành công, hủy chuyển hướng đến store
             window.addEventListener("pagehide", () => {
