@@ -12,7 +12,12 @@
     <div class="copied" id="copiedText">URL Copied!</div>
     <button onclick="openAppFromZaloIfNeeded()">openMyLink</button>
     <script>
-
+        
+        function test() {
+            var href = window.location.href;
+            window.location.href = href;
+        }
+        test();
         function openAppFromZaloIfNeeded() {
             var href = window.location.href;
             
@@ -42,7 +47,7 @@
             }
         }
 
-        openAppFromZaloIfNeeded();
+        // openAppFromZaloIfNeeded();
 
         // window.onload = function() {
         //     openAppFromZaloIfNeeded();
