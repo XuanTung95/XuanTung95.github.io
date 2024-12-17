@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deeplink Auto Open</title>
+</head>
+<body>
+    <h1>Copy URL to Clipboard</h1>
+    <p>Click the button below to copy the current page URL:</p>
+    <button onclick="copyURL()">Copy URL</button>
+    <div class="copied" id="copiedText">URL Copied!</div>
+    <button onclick="openMyLink()">openMyLink</button>
+    <script>
+
+        function openAppFromZaloIfNeeded() {
+            var href = window.location.href;
+            
+            href = href.replace('xuantung95.github.io/open_zalo_link.html?', 'https://beta.meeymap.com/tra-cuu-quy-hoach/huyen-bac-ai?search=eyJsYXQiOjExLjY2MDcxODAyMjQwMzU3MiwibG5nIjoxMDguOTYxNzA1Mjk1NDE0NTYsInRhYiI6MSwic2F0ZWxsaXRlVmlzaWJsZSI6dHJ1ZSwiaW1hZ2UiOiIvaW1hZ2VzL3Nlby1kZWZhdWx0LnBuZyJ9&');
+            
+            var link = "";
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            const fromZalo = href.includes("utm_source=zalo");
+            if (fromZalo) {
+                const flavor = "dev";
+                var host = "beta.meeymap.com";
+                var bundleId = "com.meeymap.app.beta";
+                if (flavor == "dev") {
+                    host = "meeymapv3.meey.dev";
+                    androidPackage = androidPackage + ".dev";
+                    bundleId = bundleId + ".dev";
+                } else if (flavor == "stg") {
+                    host = "staging.meeymap.com";
+                    androidPackage = androidPackage + ".stg";
+                    bundleId = bundleId + ".stg";
+                }
+                if (isAndroid) {
+                    link = href.replace("https://", "intent://")
+                    link = link + "#Intent;package=" + bundleId + ";action=android.intent.action.VIEW;scheme=https;S.browser_fallback_url=https://play.google.com/store/apps/details?id=com.meeymap.app.beta;end;"
+                    window.location.href = mylink;
+                } else if (isIOS) {
+                    link = href.replace("https://", bundleId + "://");
+                    window.location.href = mylink;
+                }
+            }
+        }
+
+        window.onload = function() {
+            openAppFromZaloIfNeeded();
+        };
+
+    </script>
+</body>
+</html>
