@@ -24,15 +24,10 @@
             const fromZalo = href.includes("utm_source=zalo");
             if (fromZalo) {
                 const flavor = "pro";
-                var host = "beta.meeymap.com";
                 var bundleId = "com.meeymap.app.beta";
                 if (flavor == "dev") {
-                    host = "meeymapv3.meey.dev";
-                    androidPackage = androidPackage + ".dev";
                     bundleId = bundleId + ".dev";
                 } else if (flavor == "stg") {
-                    host = "staging.meeymap.com";
-                    androidPackage = androidPackage + ".stg";
                     bundleId = bundleId + ".stg";
                 }
                 if (isAndroid) {
