@@ -11,8 +11,18 @@
     <button onclick="openAppFromZaloIfNeeded()">Copy URL</button>
     <div class="copied" id="copiedText">URL Copied!</div>
     <button onclick="openAppFromZaloIfNeeded()">openMyLink</button>
+    <a href="#" class="btn01" onclick="proceed('https://staging.meeymap.com/tra-cuu-quy-hoach/tt-lai-uyen?search=eyJsYXQiOjExLjI1NjQ2ODMwMTg1MTA3MiwibG5nIjoxMDYuNTkyNjQ5MzQzNzYxODIsImFkZHJlc3MiOiJUVC4gTGFpIFV5w6puLCBCw6B1IELDoG5nLCBCw6xuaCBExrDGoW5nLCBWaeG7h3QgTmFtIiwiaW1hZ2UiOiJodHRwczovL3N0YXRpY3YzLm1lZXltYXAuY29tL2ltYWdlX2NhcHR1cmUvY2FwdHVyZXRlbXBfaW1hZ2UxNzM0NDg2OTQxLndlYnAiLCJ0YWIiOjAsInNhdGVsbGl0ZVZpc2libGUiOnRydWUsInNoYXJlIjp0cnVlLCJmYWNlYm9vayI6ZmFsc2V9&amp;utm_source=zalo&amp;utm_medium=zalo&amp;utm_campaign=zalo');return false;">Tôi đã hiểu và tiếp tục</a>
     <script>
-        
+        function proceed(url) {
+            // $.ajax({
+            //     url : "/rp?url=https%3A%2F%2Fstaging.meeymap.com%2Ftra-cuu-quy-hoach%2Ftt-lai-uyen%3Fsearch%3DeyJsYXQiOjExLjI1NjQ2ODMwMTg1MTA3MiwibG5nIjoxMDYuNTkyNjQ5MzQzNzYxODIsImFkZHJlc3MiOiJUVC4gTGFpIFV5w6puLCBCw6B1IELDoG5nLCBCw6xuaCBExrDGoW5nLCBWaeG7h3QgTmFtIiwiaW1hZ2UiOiJodHRwczovL3N0YXRpY3YzLm1lZXltYXAuY29tL2ltYWdlX2NhcHR1cmUvY2FwdHVyZXRlbXBfaW1hZ2UxNzM0NDg2OTQxLndlYnAiLCJ0YWIiOjAsInNhdGVsbGl0ZVZpc2libGUiOnRydWUsInNoYXJlIjp0cnVlLCJmYWNlYm9vayI6ZmFsc2V9%26utm_source%3Dzalo%26utm_medium%3Dzalo%26utm_campaign%3Dzalo&key=0&oId=0&ac=go",
+            //     type: "POST",
+            //     data : "json"
+            // });
+            fetch('/at?page=CONFIRM&action=PROCEED&key=0&url=https%3A%2F%2Fstaging.meeymap.com%2Ftra-cuu-quy-hoach%2Ftt-lai-uyen%3Fsearch%3DeyJsYXQiOjExLjI1NjQ2ODMwMTg1MTA3MiwibG5nIjoxMDYuNTkyNjQ5MzQzNzYxODIsImFkZHJlc3MiOiJUVC4gTGFpIFV5w6puLCBCw6B1IELDoG5nLCBCw6xuaCBExrDGoW5nLCBWaeG7h3QgTmFtIiwiaW1hZ2UiOiJodHRwczovL3N0YXRpY3YzLm1lZXltYXAuY29tL2ltYWdlX2NhcHR1cmUvY2FwdHVyZXRlbXBfaW1hZ2UxNzM0NDg2OTQxLndlYnAiLCJ0YWIiOjAsInNhdGVsbGl0ZVZpc2libGUiOnRydWUsInNoYXJlIjp0cnVlLCJmYWNlYm9vayI6ZmFsc2V9%26utm_source%3Dzalo%26utm_medium%3Dzalo%26utm_campaign%3Dzalo');
+            
+            window.location.href = url;
+        }
         function test() {
             var href = window.location.href;
             window.location.href = href;
