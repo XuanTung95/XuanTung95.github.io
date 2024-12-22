@@ -12,17 +12,24 @@
     <div class="copied" id="copiedText">URL Copied!</div>
     <button onclick="openAppFromZaloIfNeeded()">openMyLink</button>
     <a class="btn01" onclick="proceed();return false;">Tôi đã hiểu và tiếp tục</a>
+    <script src="js/jquery-1.10.2.js"></script>
+    <script src="https://stc-zalosdk.zdn.vn/zalojs-sdk-v2.min.js"></script>
     <script>
         function proceed() {
-            var url = 'https://beta.meeymap.com/tra-cuu-quy-hoach/phuoc-hoa?search=eyJsYXQiOiIxMS4yMzgwODQ0NTU4NjgwNzYiLCJsbmciOiIxMDYuNzIwMTE5MDE4NTkyNDciLCJ0YWIiOjIsInNhdGVsbGl0ZVZpc2libGUiOnRydWUsImFkZHJlc3MiOiJQaMaw4bubYyBIb8OgLCBUeC4gQuG6v24gQ8OhdCwgQsOsbmggRMawxqFuZywgVmnhu4d0IE5hbSIsImltYWdlIjoiaHR0cHM6Ly9zdGF0aWN2My5tZWV5bWFwLmNvbS9pbWFnZV9jYXB0dXJlL2NhcHR1cmV0ZW1wX2ltYWdlMTczNDg0OTc2NC53ZWJwIn0';
-            // $.ajax({
-            //     url : "/rp?url=https%3A%2F%2Fstaging.meeymap.com%2Ftra-cuu-quy-hoach%2Ftt-lai-uyen%3Fsearch%3DeyJsYXQiOjExLjI1NjQ2ODMwMTg1MTA3MiwibG5nIjoxMDYuNTkyNjQ5MzQzNzYxODIsImFkZHJlc3MiOiJUVC4gTGFpIFV5w6puLCBCw6B1IELDoG5nLCBCw6xuaCBExrDGoW5nLCBWaeG7h3QgTmFtIiwiaW1hZ2UiOiJodHRwczovL3N0YXRpY3YzLm1lZXltYXAuY29tL2ltYWdlX2NhcHR1cmUvY2FwdHVyZXRlbXBfaW1hZ2UxNzM0NDg2OTQxLndlYnAiLCJ0YWIiOjAsInNhdGVsbGl0ZVZpc2libGUiOnRydWUsInNoYXJlIjp0cnVlLCJmYWNlYm9vayI6ZmFsc2V9%26utm_source%3Dzalo%26utm_medium%3Dzalo%26utm_campaign%3Dzalo&key=0&oId=0&ac=go",
-            //     type: "POST",
-            //     data : "json"
-            // });
-            // fetch('/at?page=CONFIRM&action=PROCEED&key=0&url=https%3A%2F%2Fstaging.meeymap.com%2Ftra-cuu-quy-hoach%2Ftt-lai-uyen%3Fsearch%3DeyJsYXQiOjExLjI1NjQ2ODMwMTg1MTA3MiwibG5nIjoxMDYuNTkyNjQ5MzQzNzYxODIsImFkZHJlc3MiOiJUVC4gTGFpIFV5w6puLCBCw6B1IELDoG5nLCBCw6xuaCBExrDGoW5nLCBWaeG7h3QgTmFtIiwiaW1hZ2UiOiJodHRwczovL3N0YXRpY3YzLm1lZXltYXAuY29tL2ltYWdlX2NhcHR1cmUvY2FwdHVyZXRlbXBfaW1hZ2UxNzM0NDg2OTQxLndlYnAiLCJ0YWIiOjAsInNhdGVsbGl0ZVZpc2libGUiOnRydWUsInNoYXJlIjp0cnVlLCJmYWNlYm9vayI6ZmFsc2V9%26utm_source%3Dzalo%26utm_medium%3Dzalo%26utm_campaign%3Dzalo');
+            var url = "https://beta.meeymap.com/tra-cuu-quy-hoach/phuoc-hoa?search=eyJsYXQiOiIxMS4yMzgwODQ0NTU4NjgwNzYiLCJsbmciOiIxMDYuNzIwMTE5MDE4NTkyNDciLCJ0YWIiOjIsInNhdGVsbGl0ZVZpc2libGUiOnRydWUsImFkZHJlc3MiOiJQaMaw4bubYyBIb8OgLCBUeC4gQuG6v24gQ8OhdCwgQsOsbmggRMawxqFuZywgVmnhu4d0IE5hbSIsImltYWdlIjoiaHR0cHM6Ly9zdGF0aWN2My5tZWV5bWFwLmNvbS9pbWFnZV9jYXB0dXJlL2NhcHR1cmV0ZW1wX2ltYWdlMTczNDg0OTc2NC53ZWJwIn0&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo";
+            $.ajax({
+                url : "/rp?url=https%3A%2F%2Fbeta.meeymap.com%2Ftra-cuu-quy-hoach%2Fphuoc-hoa%3Fsearch%3DeyJsYXQiOiIxMS4yMzgwODQ0NTU4NjgwNzYiLCJsbmciOiIxMDYuNzIwMTE5MDE4NTkyNDciLCJ0YWIiOjIsInNhdGVsbGl0ZVZpc2libGUiOnRydWUsImFkZHJlc3MiOiJQaMaw4bubYyBIb8OgLCBUeC4gQuG6v24gQ8OhdCwgQsOsbmggRMawxqFuZywgVmnhu4d0IE5hbSIsImltYWdlIjoiaHR0cHM6Ly9zdGF0aWN2My5tZWV5bWFwLmNvbS9pbWFnZV9jYXB0dXJlL2NhcHR1cmV0ZW1wX2ltYWdlMTczNDg0OTc2NC53ZWJwIn0%26utm_source%3Dzalo%26utm_medium%3Dzalo%26utm_campaign%3Dzalo&key=0&oId=0&ac=go",
+                type: "POST",
+                data : "json"
+            });
+            fetch('/at?page=CONFIRM&action=PROCEED&key=0&url=https%3A%2F%2Fbeta.meeymap.com%2Ftra-cuu-quy-hoach%2Fphuoc-hoa%3Fsearch%3DeyJsYXQiOiIxMS4yMzgwODQ0NTU4NjgwNzYiLCJsbmciOiIxMDYuNzIwMTE5MDE4NTkyNDciLCJ0YWIiOjIsInNhdGVsbGl0ZVZpc2libGUiOnRydWUsImFkZHJlc3MiOiJQaMaw4bubYyBIb8OgLCBUeC4gQuG6v24gQ8OhdCwgQsOsbmggRMawxqFuZywgVmnhu4d0IE5hbSIsImltYWdlIjoiaHR0cHM6Ly9zdGF0aWN2My5tZWV5bWFwLmNvbS9pbWFnZV9jYXB0dXJlL2NhcHR1cmV0ZW1wX2ltYWdlMTczNDg0OTc2NC53ZWJwIn0%26utm_source%3Dzalo%26utm_medium%3Dzalo%26utm_campaign%3Dzalo');
             
             window.location.href = url;
+        }
+        function closeWindow() {
+            var access_token = zaloJSV2.getCookie('zaloapp.com_zacc_session');
+            fetch('/at?page=CONFIRM&action=CLOSE&key=0&url=https%3A%2F%2Fbeta.meeymap.com%2Ftra-cuu-quy-hoach%2Fphuoc-hoa%3Fsearch%3DeyJsYXQiOiIxMS4yMzgwODQ0NTU4NjgwNzYiLCJsbmciOiIxMDYuNzIwMTE5MDE4NTkyNDciLCJ0YWIiOjIsInNhdGVsbGl0ZVZpc2libGUiOnRydWUsImFkZHJlc3MiOiJQaMaw4bubYyBIb8OgLCBUeC4gQuG6v24gQ8OhdCwgQsOsbmggRMawxqFuZywgVmnhu4d0IE5hbSIsImltYWdlIjoiaHR0cHM6Ly9zdGF0aWN2My5tZWV5bWFwLmNvbS9pbWFnZV9jYXB0dXJlL2NhcHR1cmV0ZW1wX2ltYWdlMTczNDg0OTc2NC53ZWJwIn0%26utm_source%3Dzalo%26utm_medium%3Dzalo%26utm_campaign%3Dzalo');
+            zaloJSV2.closeWindow(access_token, {});
         }
         function test() {
             var href = window.location.href;
