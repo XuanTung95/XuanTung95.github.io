@@ -21,9 +21,15 @@
     }
     function testIntent1() {
         window.location.href = "meeymap://meeymapv3.meey.dev/tra-cuu-quy-hoach/";
+        setTimeout(() => {
+            window.location.href = "https://meeymapv3.meey.dev/tra-cuu-quy-hoach/";
+        }, 1000);
     }
     function testIntent2() {
         window.location.href = "intent://meeymapv3.meey.dev/tra-cuu-quy-hoach/#Intent;package=com.meeymap.app.beta.dev;action=android.intent.action.VIEW;scheme=https;S.browser_fallback_url=https://play.google.com/store/apps/details?id=com.meeymap.app.beta;end;";
+        setTimeout(() => {
+            window.location.href = "https://meeymapv3.meey.dev/tra-cuu-quy-hoach/";
+        }, 1000);
     }
 </script>
 <a href="https://meeymapv3.meey.dev/tra-cuu-quy-hoach/" >A href = </a>
