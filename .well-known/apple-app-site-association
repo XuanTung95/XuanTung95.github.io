@@ -4,7 +4,23 @@
          {
             "appIDs": [ "374PS4VZU3.com.meeymap.app.new.tungpx"],
             "paths": ["*"]
-         }
+         },
+        {
+           "appIDs": [ "C68NF9QMQL.com.meeymap.app.beta"],
+           "paths": ["*"]
+        },
+        {
+           "appIDs": [ "F5ABC534ZN.com.meeymap.app.beta.stg"],
+           "paths": ["*"]
+        },
+        {
+           "appIDs": [ "F5ABC534ZN.com.meeymap.app.beta.dev"],
+           "paths": ["*"]
+        },
+        {
+           "appIDs": [ "F5ABC534ZN.com.meeymap.app.new"],
+           "paths": ["*"]
+        }
       ]
    },
    "webcredentials": {
