@@ -19,12 +19,20 @@
     function testOpen() {
         window.open("https://meeymapv3.meey.dev/tra-cuu-quy-hoach/");
     }
+    function testIntent1() {
+        window.location.href = "meeymap://meeymapv3.meey.dev/tra-cuu-quy-hoach/";
+    }
+    function testIntent2() {
+        window.location.href = "intent://meeymapv3.meey.dev/tra-cuu-quy-hoach/#Intent;package=com.meeymap.app.beta.dev;action=android.intent.action.VIEW;scheme=https;S.browser_fallback_url=https://play.google.com/store/apps/details?id=com.meeymap.app.beta;end;";
+    }
 </script>
 <a href="https://meeymapv3.meey.dev/tra-cuu-quy-hoach/" >A href = </a>
 <button onclick="testHref();">testHref</button>
 <button onclick="testReplace();">testReplace</button>
 <button onclick="testAssign();">testAssign</button>
 <button onclick="testOpen();">testOpen</button>
+<button onclick="testIntent1();">testIntent1</button>
+<button onclick="testIntent2();">testIntent2</button>
 </body>
 </html>
 
