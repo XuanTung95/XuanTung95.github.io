@@ -154,7 +154,11 @@ async function getYoutubeStreamData(param) {
     if (data) {
         data.cpn = html5Cpn;
     }
-    return data;
+    if (data.id == videoId) {
+        return JSON.stringify(data);
+    } else {
+        return "";
+    }
 }
 
 async function getHlsManifestUrl(videoId) {
