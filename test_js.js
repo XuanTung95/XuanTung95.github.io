@@ -1,6 +1,7 @@
 let cachedJavaScriptPlayerCode = null;
 let cachedSignatureTimestamp = null;
 let globalInfo = null;
+let cachedSignatureDeobfuscationFunction = null;
 
 async function httpGet(url, headers) {
     return sendMessage('flutterFetch', JSON.stringify(
@@ -142,18 +143,18 @@ async function getYoutubeStreamData(param) {
         iosResponse = await iosResponseFuture;
     }
 
-    console.log("playerRes", playerResponse);
-    console.log("nextResponse", nextResponse);
-    console.log("iosResponse", iosResponse);
+    console.log("playerRes", playerResponse == null);
+    console.log("nextResponse", nextResponse == null);
+    console.log("iosResponse", iosResponse == null);
     let data = await extractStreamData({
         playerResponse: playerResponse,
         nextResponse: nextResponse,
         iosResponse: iosResponse,
         videoId: videoId,
+        html5Cpn: html5Cpn, 
+        iosCpn: iosCpn,
+        hlsManifestUrl: hlsManifestUrl
     });
-    if (data) {
-        data.cpn = html5Cpn;
-    }
     if (data.id == videoId) {
         return JSON.stringify(data);
     } else {
@@ -185,12 +186,9 @@ async function getHlsManifestUrl(videoId) {
             const str1 = '"hlsManifestUrl":"';
             const str2 = '.m3u8",';
             let idx1 = html.indexOf(str1);
-            console.log("idx1", idx1);
-            console.log("body", html.indexOf("body"));
             if (idx1 >= 0) {
               idx1 += str1.length;
               const idx2 = html.indexOf(str2, idx1);
-              console.log("idx2", idx2);
               if (idx2 >= 0) {
                 const url = html.substring(idx1, idx2 + str2.length - 2);
                 let hlsManifestUrl = url;
@@ -638,12 +636,14 @@ async function extractJavaScriptPlayerCode() {
   }
 
   async function extractStreamData({
-    playerResponse, nextResponse, iosResponse, videoId
+    playerResponse, nextResponse, iosResponse, videoId, html5Cpn, iosCpn, hlsManifestUrl
   }) {
     let ret = {};
     let response = playerResponse;
+    ret.cpn = html5Cpn;
     if (response == null) {
         response = iosResponse;
+        ret.cpn = iosCpn;
     }
     /// streamType
     let streamType = "VIDEO_STREAM"
@@ -892,11 +892,43 @@ async function extractJavaScriptPlayerCode() {
 
     // ret.dashMpdUrl = map['dashMpdUrl'] ?? '';
     // ret.hlsUrl = map['hlsUrl'] ?? '';
-    ret.hlsUrl = getManifestUrl("hls", [iosResponse?.streamingData])
+    if (hlsManifestUrl) {
+      ret.hlsUrl = hlsManifestUrl;
+    } else {
+      ret.hlsUrl = getManifestUrl("hls", [iosResponse?.streamingData])
+    }
     ret.forceHlsUrl = true;
+
+    let items;
+    if (iosResponse?.streamingData) {
+      items = [{
+        data: iosResponse?.streamingData,
+        cpn: iosCpn
+      }]
+    } else {
+      items = [{
+        data: playerResponse?.streamingData,
+        cpn: html5Cpn
+      }]
+    }
     // ret.videoStreams = map['videoStreams'] is List ? VideoStream.parseList(map['videoStreams']) : null;
+    try {
+      ret.videoStreams = await getVideoStreams(items);
+    } catch (e) {
+      console.log(e)
+    }
     // ret.audioStreams = map['audioStreams'] is List ? AudioStream.parseList(map['audioStreams']) : null;
+    try {
+      ret.audioStreams = await getAudioStreams(items);
+    } catch (e) {
+      console.log(e)
+    }
     // ret.videoOnlyStreams = map['videoOnlyStreams'] is List ? VideoStream.parseList(map['videoOnlyStreams']) : null;
+    try {
+      ret.videoOnlyStreams = await getVideoOnlyStreams(items);
+    } catch (e) {
+      console.log(e)
+    }
 
     return ret;
   }
@@ -1366,6 +1398,39 @@ function getFrames(playerResponse) {
     {id: 315, itagType: "VIDEO_ONLY", mediaFormat: "WEBM", resolutionString: "2160p60", fps: 60}
   ];
 
+  const MEDIAFOMAT_LIST = [
+    {"code": "MPEG_4", "id": 0x0, "name": "MPEG-4", "suffix": "mp4", "mimeType": "video/mp4"},
+    {"code": "v3GPP", "id": 0x10, "name": "3GPP", "suffix": "3gp", "mimeType": "video/3gpp"},
+    {"code": "WEBM", "id": 0x20, "name": "WebM", "suffix": "webm", "mimeType": "video/webm"},
+    {"code": "M4A", "id": 0x100, "name": "m4a", "suffix": "m4a", "mimeType": "audio/mp4"},
+    {"code": "WEBMA", "id": 0x200, "name": "WebM", "suffix": "webm", "mimeType": "audio/webm"},
+    {"code": "MP3", "id": 0x300, "name": "MP3", "suffix": "mp3", "mimeType": "audio/mpeg"},
+    {"code": "MP2", "id": 0x310, "name": "MP2", "suffix": "mp2", "mimeType": "audio/mpeg"},
+    {"code": "OPUS", "id": 0x400, "name": "opus", "suffix": "opus", "mimeType": "audio/opus"},
+    {"code": "OGG", "id": 0x500, "name": "ogg", "suffix": "ogg", "mimeType": "audio/ogg"},
+    {"code": "WEBMA_OPUS", "id": 0x200, "name": "WebM Opus", "suffix": "webm", "mimeType": "audio/webm"},
+    {"code": "AIFF", "id": 0x600, "name": "AIFF", "suffix": "aiff", "mimeType": "audio/aiff"},
+    {"code": "AIF", "id": 0x600, "name": "AIFF", "suffix": "aif", "mimeType": "audio/aiff"},
+    {"code": "WAV", "id": 0x700, "name": "WAV", "suffix": "wav", "mimeType": "audio/wav"},
+    {"code": "FLAC", "id": 0x800, "name": "FLAC", "suffix": "flac", "mimeType": "audio/flac"},
+    {"code": "ALAC", "id": 0x900, "name": "ALAC", "suffix": "alac", "mimeType": "audio/alac"},
+    {"code": "VTT", "id": 0x1000, "name": "WebVTT", "suffix": "vtt", "mimeType": "text/vtt"},
+    {"code": "TTML", "id": 0x2000, "name": "Timed Text Markup Language", "suffix": "ttml", "mimeType": "application/ttml+xml"},
+    {"code": "TRANSCRIPT1", "id": 0x3000, "name": "TranScript v1", "suffix": "srv1", "mimeType": "text/xml"},
+    {"code": "TRANSCRIPT2", "id": 0x4000, "name": "TranScript v2", "suffix": "srv2", "mimeType": "text/xml"},
+    {"code": "TRANSCRIPT3", "id": 0x5000, "name": "TranScript v3", "suffix": "srv3", "mimeType": "text/xml"},
+    {"code": "SRT", "id": 0x6000, "name": "SubRip file format", "suffix": "srt", "mimeType": "text/srt"}
+  ];
+
+  function getMediaformatByCode(code) {
+    for (const item of MEDIAFOMAT_LIST) {
+      if (code === item.code) {
+        return item;
+      }
+    }
+    return null
+  }
+
   function isItagSupported(itag) {
     for (const item of ITAG_LIST) {
       if (itag === item.id) {
@@ -1384,11 +1449,77 @@ function getFrames(playerResponse) {
     return null;
   }
 
+  async function getAudioStreams(items) {
+    return getStreamFromItags(items, "adaptiveFormats", "AUDIO", getAudioStreamBuilderHelper(), "audio");
+  }
+  
+  async function getVideoStreams(items) {
+    return getStreamFromItags(items, "formats", "VIDEO", getVideoStreamBuilderHelper(false), "video");
+  }
+  
+  async function getVideoOnlyStreams(items) {
+    return getStreamFromItags(items, "adaptiveFormats", "VIDEO_ONLY", getVideoStreamBuilderHelper(true), "video-only");
+  }
+
+  function getAudioStreamBuilderHelper() {
+    return function (itagInfo) {
+      const itagItem = itagInfo.itagItem;
+      const audioStream = {};
+  
+      audioStream.id = itagItem?.id?.toString();
+      audioStream.content = itagInfo.content;
+      audioStream.mediaFormat = getMediaformatByCode(itagItem?.mediaFormat);
+      audioStream.averageBitrate = itagItem?.avgBitrate;
+      audioStream.audioTrackId = itagItem?.audioTrackId;
+      audioStream.audioTrackName = itagItem?.audioTrackName;
+      audioStream.audioTrackType = itagItem?.audioTrackType;
+      audioStream.itagItem = itagItem;
+      // if (
+      //   streamType === StreamType.LIVE_STREAM ||
+      //   streamType === StreamType.POST_LIVE_STREAM ||
+      //   itagInfo.isUrl === false
+      // ) {
+      //   // For YouTube videos on OTF streams and for all streams of post-live streams
+      //   // and live streams, only the DASH delivery method can be used.
+      //   audioStream.deliveryMethod = DeliveryMethod.DASH;
+      // }
+      return audioStream;
+    };
+  }  
+
+  function getVideoStreamBuilderHelper(areStreamsVideoOnly) {
+    return function (itagInfo) {
+      const itagItem = itagInfo.itagItem;
+      const videoStream = {};
+  
+      videoStream.id = itagItem?.id?.toString();
+      videoStream.content = itagInfo.content;
+      videoStream.isUrl = itagInfo.isUrl;
+      videoStream.mediaFormat = getMediaformatByCode(itagItem?.mediaFormat);
+      videoStream.isVideoOnly = areStreamsVideoOnly;
+      videoStream.itagItem = itagItem;
+  
+      const resolutionString = itagItem?.resolutionString || '';
+      videoStream.resolution = resolutionString;
+  
+      // if (
+      //   streamType !== StreamType.VIDEO_STREAM ||
+      //   itagInfo.isUrl === false
+      // ) {
+      //   // For YouTube videos on OTF streams and for all streams of post-live streams
+      //   // and live streams, only the DASH delivery method can be used.
+      //   videoStream.deliveryMethod = DeliveryMethod.DASH;
+      // }
+  
+      return videoStream;
+    };
+  }
+
   async function getStreamFromItags(items, streamingDataKey, itagTypeWanted, streamBuilderHelper, streamTypeExceptionMessage) {
     const streamList = [];
     try {
       for (const item of items) {
-        const tags = await getStreamsFromStreamingDataKey(videoId, item.o1, streamingDataKey, itagTypeWanted, item.o2);
+        const tags = await getStreamsFromStreamingDataKey(item.data, streamingDataKey, itagTypeWanted, item.cpn);
         for (const value of tags) {
           const stream = streamBuilderHelper(value);
           streamList.push(stream);
@@ -1399,7 +1530,7 @@ function getFrames(playerResponse) {
     return streamList;
   }
 
-  async function getStreamsFromStreamingDataKey(videoId, streamingData, streamingDataKey, itagTypeWanted, contentPlaybackNonce) {
+  async function getStreamsFromStreamingDataKey(streamingData, streamingDataKey, itagTypeWanted, contentPlaybackNonce) {
     if (!streamingData || !streamingData[streamingDataKey]) {
       return [];
     }
@@ -1413,7 +1544,7 @@ function getFrames(playerResponse) {
         if (itagItem) {
           if (itagItem.itagType === itagTypeWanted) {
             try {
-              const itagInfo = await buildAndAddItagInfoToList(videoId, formatData, itagItem, itagItem.itagType, contentPlaybackNonce);
+              const itagInfo = await buildAndAddItagInfoToList(formatData, itagItem, itagItem.itagType, contentPlaybackNonce);
               ret.push(itagInfo);
             } catch (e) {
               console.log(`getStreamsFromStreamingDataKey: ${e}`);
@@ -1426,7 +1557,7 @@ function getFrames(playerResponse) {
     return ret;
   }
 
-  async function buildAndAddItagInfoToList(videoId, formatData, itagItem, itagType, contentPlaybackNonce, tempInfo) {
+  async function buildAndAddItagInfoToList(formatData, itagItem, itagType, contentPlaybackNonce) {
     let streamUrl;
     let cipher;
   
@@ -1436,7 +1567,7 @@ function getFrames(playerResponse) {
       // This url has an obfuscated signature
       const cipherString = formatData["cipher"] || formatData["signatureCipher"];
       cipher = compatParseMap(cipherString);
-      const signature = tempInfo?.signatureMap[cipher.s] || await deobfuscateSignature(videoId, cipher.s);
+      const signature = await deobfuscateSignature(cipher.s);
       streamUrl = `${cipher.url}&${cipher.sp}=${signature}`;
     }
   
@@ -1444,7 +1575,7 @@ function getFrames(playerResponse) {
     streamUrl += `&cpn=${contentPlaybackNonce}`;
   
     // Decrypt the n parameter if it is present
-    streamUrl = await tryDeobfuscateThrottlingParameterOfUrl(streamUrl, videoId);
+    // streamUrl = await tryDeobfuscateThrottlingParameterOfUrl(streamUrl, videoId);
   
     const initRange = formatData.initRange;
     const indexRange = formatData.indexRange;
@@ -1454,71 +1585,52 @@ function getFrames(playerResponse) {
     itagItem.bitrate = formatData.bitrate;
     itagItem.width = formatData.width;
     itagItem.height = formatData.height;
-    itagItem.initStart = parseInt(initRange?.start || "-1");
-    itagItem.initEnd = parseInt(initRange?.end || "-1");
-    itagItem.indexStart = parseInt(indexRange?.start || "-1");
-    itagItem.indexEnd = parseInt(indexRange?.end || "-1");
+    itagItem.initStart = parseInt(initRange?.start || "-1", 10);
+    itagItem.initEnd = parseInt(initRange?.end || "-1", 10);
+    itagItem.indexStart = parseInt(indexRange?.start || "-1", 10);
+    itagItem.indexEnd = parseInt(indexRange?.end || "-1", 10);
     itagItem.quality = formatData.quality;
     itagItem.codec = codec;
   
-    if (streamType === StreamType.LIVE_STREAM || streamType === StreamType.POST_LIVE_STREAM) {
-      itagItem.targetDurationSec = formatData.targetDurationSec;
-    }
+    itagItem.targetDurationSec = formatData.targetDurationSec;
   
-    if (itagType === ItagType.VIDEO || itagType === ItagType.VIDEO_ONLY) {
+    if (itagType === "VIDEO" || itagType === "VIDEO_ONLY") {
       itagItem.fps = formatData.fps;
-    } else if (itagType === ItagType.AUDIO) {
+    } else if (itagType === "AUDIO") {
       // YouTube returns the audio sample rate as a string
-      itagItem.sampleRate = parseInt(formatData.audioSampleRate || '-1');
+      itagItem.sampleRate = parseInt(formatData.audioSampleRate || '-1', 10);
       itagItem.audioChannels = formatData.audioChannels || 2;
   
-      const audioTrackId = formatData.audioTrack?.id;
-      if (audioTrackId) {
-        itagItem.audioTrackId = audioTrackId;
-        const audioTrackIdLastLocaleCharacter = audioTrackId.indexOf(".");
-        if (audioTrackIdLastLocaleCharacter !== -1) {
-          // Audio tracks IDs are in the form LANGUAGE_CODE.TRACK_NUMBER
-          // LocaleCompat.forLanguageTag(
-          //   audioTrackId.substring(0, audioTrackIdLastLocaleCharacter)
-          // ).ifPresent(itagItem::setAudioLocale);
-        }
-        // itagItem.audioTrackType(YoutubeParsingHelper.extractAudioTrackType(streamUrl));
-      }
+      itagItem.audioTrackId = formatData.audioTrack?.id;
   
       itagItem.audioTrackName = formatData.audioTrack?.displayName;
     }
   
     // YouTube returns the content length and the approximate duration as strings
-    itagItem.contentLength = parseInt(formatData.contentLength || '');
-    itagItem.approxDurationMs = parseInt(formatData.approxDurationMs || '');
+    itagItem.contentLength = parseInt(formatData.contentLength || '0', 10);
+    itagItem.approxDurationMs = parseInt(formatData.approxDurationMs || '0', 10);
   
-    const itagInfo = new ItagInfo({
+    const itagInfo = {
       content: streamUrl,
       itagItem: itagItem
-    });
+    };
   
-    if (streamType === StreamType.VIDEO_STREAM) {
-      itagInfo.isUrl = (formatData.type || "") !== "FORMAT_STREAM_TYPE_OTF";
-    } else {
-      // We are currently not able to generate DASH manifests for running
-      // livestreams, so because of the requirements of StreamInfo
-      // objects, return these streams as DASH URL streams (even if they
-      // are not playable).
-      // Ended livestreams are returned as non-URL streams
-      itagInfo.isUrl = (streamType !== StreamType.POST_LIVE_STREAM);
-    }
+    // if (streamType === StreamType.VIDEO_STREAM) {
+    //   itagInfo.isUrl = (formatData.type || "") !== "FORMAT_STREAM_TYPE_OTF";
+    // } else {
+    //   itagInfo.isUrl = (streamType !== StreamType.POST_LIVE_STREAM);
+    // }
   
     return itagInfo;
   }
 
   function compatParseMap(input) {
     const map = {};
-    const args = input.split("&");
-  
-    args.forEach(arg => {
+    
+    input.split("&").forEach(arg => {
       const splitArg = arg.split("=");
       if (splitArg.length > 1) {
-        map[splitArg[0]] = decodeUrlUtf8(splitArg[1]);
+        map[splitArg[0]] = decodeURIComponent(splitArg[1]);
       } else {
         map[splitArg[0]] = "";
       }
@@ -1528,12 +1640,6 @@ function getFrames(playerResponse) {
   }
 
   async function deobfuscateSignature(obfuscatedSignature) {
-    // If the signature deobfuscation function has been not extracted previously,
-    // this means we will fail to extract it on next calls too if the player code has not changed.
-    // We can optimize performance by checking if the extraction exception has occurred.
-    if (sigDeobFuncExtractionEx !== null) {
-      return null;
-    }
   
     await extractJavaScriptCodeIfNeeded();
   
@@ -1604,6 +1710,7 @@ function getFrames(playerResponse) {
       return helperObject + deobfuscationFunction + ";" + callerFunction;
     } catch (e) {
       // Handle error: Could not parse deobfuscation function
+      console.log(e);
     }
   }
   
@@ -1631,8 +1738,8 @@ function getFrames(playerResponse) {
   
   function getDeobfuscateFunctionWithRegex(javaScriptPlayerCode, deobfuscationFunctionName) {
     const DEOBF_FUNC_REGEX_START = '(';
-    const DEOBF_FUNC_REGEX_END = '=function\\([a-zA-Z0-9_]+\\)\\{.+?\\}';
-    const functionPattern = DEOBF_FUNC_REGEX_START + RegExp.escape(deobfuscationFunctionName) + DEOBF_FUNC_REGEX_END;
+    const DEOBF_FUNC_REGEX_END = '=function\\([a-zA-Z0-9_]+\\)\\{.+?\\})';
+    const functionPattern = DEOBF_FUNC_REGEX_START + deobfuscationFunctionName + DEOBF_FUNC_REGEX_END;
     const regex = new RegExp(functionPattern);
     const match = javaScriptPlayerCode.match(regex);
     
@@ -1644,7 +1751,7 @@ function getFrames(playerResponse) {
   
   function getHelperObject(javaScriptPlayerCode, helperObjectName) {
     const SIG_DEOBF_HELPER_OBJ_REGEX_START = '(var ';
-    const SIG_DEOBF_HELPER_OBJ_REGEX_END = '=\\{(?:.|\\n)+?\\}\\};';
+    const SIG_DEOBF_HELPER_OBJ_REGEX_END = '=\\{(?:.|\\n)+?\\}\\};)';
     const helperPattern = SIG_DEOBF_HELPER_OBJ_REGEX_START
       + helperObjectName
       + SIG_DEOBF_HELPER_OBJ_REGEX_END;
