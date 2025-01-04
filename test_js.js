@@ -156,7 +156,11 @@ async function getYoutubeStreamData(param) {
         hlsManifestUrl: hlsManifestUrl
     });
     if (data.id == videoId) {
+      if (globalInfo.isIOS == true) {
+        return data;
+      } else {
         return JSON.stringify(data);
+      }
     } else {
         return "";
     }
