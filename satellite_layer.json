@@ -1,1 +1,1 @@
-{"version":8,"sources":{"basemap":{"type":"raster","tiles":["https:\/\/mt0.google.com\/vt\/lyrs=s,h&hl=en&x={x}&y={y}&z={z}"],"tileSize":256}},"layers":[{"id":"satellite","type":"raster","source":"basemap","layout":{"visibility":"visible"},"paint":{"raster-opacity":1}}]}
+{"version":8,"sources":{"basemap":{"type":"raster","tiles":["https:\/\/mt0.google.com\/vt\/lyrs=s&hl=vi&x={x}&y={y}&z={z}"],"tileSize":256}},"layers":[{"id":"satellite","type":"raster","source":"basemap","layout":{"visibility":"visible"},"paint":{"raster-opacity":1}}]}
