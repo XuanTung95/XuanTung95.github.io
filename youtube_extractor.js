@@ -103,6 +103,55 @@ function getDefaultGlobalInfo() {
       };
 }
 
+async function getApiSIDHash(SAPISID) {
+    const origin = "https://www.youtube.com";
+    const time = Math.floor(Date.now() / 1000);
+    const token = `${time} ${SAPISID} ${origin}`;
+
+    const encoder = new TextEncoder();
+    const data = encoder.encode(token);
+    const hashBuffer = await crypto.subtle.digest("SHA-1", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const sha1Hash = hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
+    return `SAPISIDHASH ${time}_${sha1Hash}`;
+}
+
+async function getAuthorizationHeader(SAPISID) {
+    if (SAPISID == null || SAPISID == "") {
+        return null;
+    }
+    try {
+      let ret = await getApiSIDHash(SAPISID);
+      return ret;
+    } catch (e) {
+      print(e);
+    }
+    return null;
+}
+
+async function getLoginHeaders() {
+  if (globalInfo == null) {
+      return null;
+  }
+  if (globalInfo.cookieLogin != null) {
+      if (globalInfo.cookieLogin.cookies != null) {
+          let cookies = globalInfo.cookieLogin.cookies;
+          if (cookies.SAPISID != null) {
+            let au = await getAuthorizationHeader(cookies.SAPISID);
+            if (au == null) {
+              return null;
+            }
+            return {
+              "authorization": au,
+              "cookie": getCookieString(),
+            };
+          }
+          return null;
+      }
+  }
+  return null;
+}
+
 async function getYoutubeStreamData(param) {
     let videoId = param["videoId"];
     if (param["globalInfo"]) {
@@ -115,7 +164,7 @@ async function getYoutubeStreamData(param) {
     }
     let hlsManifestUrl = await getHlsManifestUrl(videoId);
     print('JS hlsManifestUrl', hlsManifestUrl);
-
+    let loginHeader = await getLoginHeaders();
     let html5Cpn = generateContentPlaybackNonce()
     print('JS html5Cpn', html5Cpn);
     let sts = await getSignatureTimestamp();
@@ -143,7 +192,7 @@ async function getYoutubeStreamData(param) {
     let playerResponseFuture = getJsonPostResponse(
         "player",
         body,
-        null,
+        loginHeader,
       );
     let iosResponseFuture = null;
     if (hlsManifestUrl == null || globalInfo.forceHls == false) {
@@ -152,7 +201,7 @@ async function getYoutubeStreamData(param) {
     let nextResponseFuture = getJsonPostResponse(
         "next",
         bodyNext,
-        null,
+        loginHeader,
       );
     
     let playerResponse = await playerResponseFuture;
