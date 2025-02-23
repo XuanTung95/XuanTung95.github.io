@@ -2,6 +2,15 @@ let cachedJavaScriptPlayerCode = null;
 let cachedSignatureTimestamp = null;
 let globalInfo = null;
 let cachedSignatureDeobfuscationFunction = null;
+let youtubeCookie = null;
+let youtubeVisitorId = null;
+
+function print(msg, obj) {
+  if (globalInfo && globalInfo.noPrint == true) {
+   return;
+  }
+  console.log(msg, obj)
+}
 
 async function httpGet(url, headers) {
     return sendMessage('flutterFetch', JSON.stringify(
@@ -48,6 +57,13 @@ function getTextBody(res) {
     return null;
 }
 
+function getResponseHeaders(res) {
+    if (res != null && res['responseHeaders'] != null) {
+        return res['responseHeaders'];
+    }
+    return null;
+}
+
 async function httpGetText(url, headers) {
     let res = await httpGet(url, headers);
     return getTextBody(res);
@@ -90,24 +106,26 @@ async function getYoutubeStreamData(param) {
     let videoId = param["videoId"];
     if (param["globalInfo"]) {
       globalInfo = param["globalInfo"];
+      print('JS set globalInfo', globalInfo);
     } else {
         if (globalInfo == null) {
             globalInfo = getDefaultGlobalInfo()
         }
     }
     let hlsManifestUrl = await getHlsManifestUrl(videoId);
+    print('JS hlsManifestUrl', hlsManifestUrl);
 
     let html5Cpn = generateContentPlaybackNonce()
-    console.log("html5Cpn", html5Cpn);
+    print('JS html5Cpn', html5Cpn);
     let sts = await getSignatureTimestamp();
-    console.log("getSignatureTimestamp", sts);
+    print('JS signature Timestamp ', sts);
     /// Body Web
     let body = createDesktopPlayerBody(
         videoId,
         sts,
         html5Cpn,
         false
-      );
+    );
     /// Next
     let bodyNext = getContextBody(true);
     bodyNext["videoId"] = videoId;
@@ -142,10 +160,9 @@ async function getYoutubeStreamData(param) {
     if (iosResponseFuture) {
         iosResponse = await iosResponseFuture;
     }
-
-    console.log("playerRes", playerResponse == null);
-    console.log("nextResponse", nextResponse == null);
-    console.log("iosResponse", iosResponse == null);
+    print("JS playerRes", playerResponse == null);
+    print("JS nextResponse", nextResponse == null);
+    print("JS iosResponse", iosResponse == null);
     let data = await extractStreamData({
         playerResponse: playerResponse,
         nextResponse: nextResponse,
@@ -157,16 +174,22 @@ async function getYoutubeStreamData(param) {
     });
     if (data.id == videoId) {
       if (globalInfo.isIOS === false) {
+        print("JS return stringify data");
         return JSON.stringify(data);
       } else {
+        print("JS return map data");
         return data;
       }
     } else {
+        print("JS return empty");
         return "";
     }
 }
 
 async function getHlsManifestUrl(videoId) {
+    if (youtubeVisitorId == null) {
+      await getYoutubeVisitorDataForHls();
+    }
     let path = `https://www.youtube.com/watch?v=${videoId}`;
     try {
         let headers = {
@@ -177,12 +200,22 @@ async function getHlsManifestUrl(videoId) {
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15',
             'referer': path,
         };
+        /*
         let cookie = getCookieString();
         if (cookie != null && cookie != '' && globalInfo?.useCookieForHls == true) {
             headers['Cookie'] = cookie;
         }
+        */
+        if (youtubeCookie != null) {
+          headers['Cookie'] = youtubeCookie;
+        }
+        /*
         if (globalInfo?.useVisitorIdForHls == true) {
             headers['x-goog-visitor-id'] = getVisitorId();
+        }
+        */
+        if (youtubeVisitorId != null) {
+          headers['x-goog-visitor-id'] = youtubeVisitorId;
         }
         let text = await httpGetText(path, headers);
         if (text != null && (typeof text === "string")) {
@@ -201,8 +234,9 @@ async function getHlsManifestUrl(videoId) {
             }
         }
     } catch (e) {
-        console.log(e);
+        print(e);
     }
+    print('JS getHlsManifestUrl return null');
     return null;
 }
 
@@ -257,17 +291,14 @@ function generateTParameter() {
 async function extractJavaScriptUrlWithIframeResource() {
     const iframeUrl = "https://www.youtube.com/iframe_api";
     let iframeContent = null;
-
     try {
         iframeContent = await httpGetText(iframeUrl);
     } catch (e) {
-        console.error(`Could not fetch IFrame resource: ${e}`);
+        print(`Could not fetch IFrame resource:`, e);
     }
-
     if (!iframeContent) {
         return null;
     }
-
     try {
         const PLAYER_PATTERN = /player\\\/([a-z0-9]{8})\\\//;
         const match = PLAYER_PATTERN.exec(iframeContent);
@@ -276,45 +307,45 @@ async function extractJavaScriptUrlWithIframeResource() {
             return `https://www.youtube.com/s/player/${hash}/player_ias.vflset/en_GB/base.js`;
         }
     } catch (e) {
-        console.error(`IFrame resource didn't provide JavaScript base player's hash: ${e}`);
+        print(`IFrame resource didn't provide JavaScript base player's hash:`, e);
     }
-
     return null;
 }
 
 async function extractJavaScriptCodeIfNeeded() {
     if (!cachedJavaScriptPlayerCode) {
         cachedJavaScriptPlayerCode = await extractJavaScriptPlayerCode();
+        print("JS get new JavaScriptPlayerCode");
     }
     return cachedJavaScriptPlayerCode;
+}
+
+async function runInitCode() {
+  await extractJavaScriptCodeIfNeeded()
 }
 
 async function extractJavaScriptPlayerCode() {
     let url = null;
     try {
       url = await extractJavaScriptUrlWithIframeResource();
-      console.log("url", url)
       if (url == null) {
+        print("JS javaScriptUrl == null")
         return null;
       }
       let playerJsUrl = cleanJavaScriptUrl(url);
-
-      // Assert that the URL we extracted and built is valid
-
+      print("JS JavaScriptPlayerUrl", playerJsUrl)
       let code = await downloadJavaScriptCode(playerJsUrl);
       return code;
     } catch (e) {
-      console.log('extractJavaScriptPlayerCode', e);
+      print('JS extractJavaScriptPlayerCode error ', e);
     }
     return null;
   }
 
   function cleanJavaScriptUrl(javaScriptPlayerUrl) {
     if (javaScriptPlayerUrl.startsWith("//")) {
-      // Add "https:" for protocol-relative URLs
       return `https:${javaScriptPlayerUrl}`;
     } else if (javaScriptPlayerUrl.startsWith("/")) {
-      // Add "https://www.youtube.com" for URLs relative to YouTube's domain
       return `https://www.youtube.com${javaScriptPlayerUrl}`;
     } else {
       return javaScriptPlayerUrl;
@@ -326,19 +357,16 @@ async function extractJavaScriptPlayerCode() {
       let res = await httpGetText(url)
       return res;
     } catch (e) {
-      console.log("Could not get JavaScript base player's code", e);
+      print("Could not get JavaScript base player's code", e);
     }
     return null;
   }
 
   async function getSignatureTimestamp() {
-    // Return the cached result if it is present
     if (cachedSignatureTimestamp != null) {
       return cachedSignatureTimestamp;
     }
-
     await extractJavaScriptCodeIfNeeded();
-
     try {
       if (cachedJavaScriptPlayerCode != null) {
         const STS_REGEX = /signatureTimestamp[=:](\d+)/;
@@ -349,13 +377,12 @@ async function extractJavaScriptPlayerCode() {
                 cachedSignatureTimestamp = parseInt(timestamp, 10);
             }
         } else {
-            console.log("No match found.");
+            print("JS getSignatureTimestamp No match found.");
         }
-        }
+      }
     } catch (e) {
-        console.log("getSignatureTimestamp", e);
+        print("getSignatureTimestamp exception", e);
     }
-    console.log("getSignatureTimestamp", cachedSignatureTimestamp);
     return cachedSignatureTimestamp ?? 20073;
   }
 
@@ -366,23 +393,19 @@ async function extractJavaScriptPlayerCode() {
     isTvHtml5 = false,
   ) {
     let body;
-  
     body = isTvHtml5 ? getTvHtml5EmbedBody(videoId) : getContextBody({ isDesktop: true });
-  
     body["playbackContext"] = {
       "contentPlaybackContext": {
         "signatureTimestamp": sts,
         "referer": `https://www.youtube.com/watch?v=${videoId}`
       }
     };
-
     if (contentPlaybackNonce) {
         body["cpn"] = contentPlaybackNonce;
     }
     body["videoId"] = videoId;
     body["contentCheckOk"] = true;
     body["racyCheckOk"] = true;
-  
     return body;
   }
 
@@ -398,12 +421,9 @@ async function extractJavaScriptPlayerCode() {
         "utcOffsetMinutes": globalInfo.utcOffsetMinutes ?? 0,
       }
     };
-  
-    // Add visitorData only if it's not null
     if (globalInfo && globalInfo.visitorData != null) {
       clientBody["client"]["visitorData"] = globalInfo.visitorData;
     }
-  
     return clientBody;
   }
 
@@ -422,12 +442,9 @@ async function extractJavaScriptPlayerCode() {
         lockedSafetyMode: false,
       }
     };
-  
-    // Conditionally add "enableSafetyMode" if GlobalInfo.instance.enableSafetyMode is true
     if (globalInfo && globalInfo.enableSafetyMode) {
       userBody.user.enableSafetyMode = true;
     }
-  
     return userBody;
   }
 
@@ -452,7 +469,6 @@ async function extractJavaScriptPlayerCode() {
         ...getUserBody(),
       }
     };
-  
     return contextBody;
   }
 
@@ -461,7 +477,6 @@ async function extractJavaScriptPlayerCode() {
     if (globalInfo != null) {
         visitorData = globalInfo.visitorData || (forceVisitorData ? globalInfo.requiredVisitorData : null);
     }
-  
     const clientBody = {
       client: {
         hl: globalInfo.languageCode || 'en',
@@ -473,12 +488,9 @@ async function extractJavaScriptPlayerCode() {
         utcOffsetMinutes: globalInfo.utcOffsetMinutes || 0,
       }
     };
-  
-    // Conditionally add "visitorData" if it exists
     if (visitorData !== null) {
       clientBody.client.visitorData = visitorData;
     }
-  
     return clientBody;
   }
 
@@ -499,29 +511,23 @@ async function extractJavaScriptPlayerCode() {
         utcOffsetMinutes: globalInfo.utcOffsetMinutes,
       }
     };
-  
     if (globalInfo.deviceMake !== null) {
       clientBody.client.deviceMake = globalInfo.deviceMake;
     }
-  
     if (globalInfo.deviceModel !== null) {
       clientBody.client.deviceModel = globalInfo.deviceModel;
     }
-  
     if (globalInfo.androidSdkVersion !== null) {
       clientBody.client.androidSdkVersion = globalInfo.androidSdkVersion;
     }
-  
     if (visitorData !== null) {
       clientBody.client.visitorData = visitorData;
     }
-  
     return clientBody;
   }
 
   function getYouTubeHeaders(forceVisitorData = false) {
-    const headers = getClientInfoHeaders(forceVisitorData);
-    return headers;
+    return getClientInfoHeaders(forceVisitorData);
   }
 
   function getClientInfoHeaders(forceVisitorData = false) {
@@ -544,7 +550,6 @@ async function extractJavaScriptPlayerCode() {
 
   function getClientHeaders(name, version, forceVisitorData = false) {
     const visitorData = globalInfo.visitorData || (forceVisitorData ? globalInfo.requiredVisitorData : null) || null;
-    
     const headers = {
       host: "www.youtube.com",
       "x-youtube-client-name": name,
@@ -554,32 +559,26 @@ async function extractJavaScriptPlayerCode() {
       "sec-fetch-site": "same-origin",
       "sec-fetch-mode": "same-origin"
     };
-  
     if (visitorData) {
       headers["x-goog-visitor-id"] = visitorData;
     }
-  
     return headers;
   }
 
   async function getJsonPostResponse(endpoint, body, forceVisitorData = false, header = null) {
     const headers = getYouTubeHeaders(forceVisitorData);
-  
     if (header) {
       Object.assign(headers, header);
     }
-  
     try {
       const response = await httpPostJson(`https://www.youtube.com/youtubei/v1/${endpoint}?prettyPrint=false`,
         headers,
         body,
       );
-  
       return response;
     } catch (error) {
       console.error('Error in POST request:', error);
     }
-  
     return null;
   }
 
@@ -604,7 +603,6 @@ async function extractJavaScriptPlayerCode() {
         }
       }
     };
-  
     return body;
   }
 
@@ -625,7 +623,6 @@ async function extractJavaScriptPlayerCode() {
     if (endPartOfUrlRequest) {
       baseEndpointUrl += endPartOfUrlRequest;
     }
-  
     try {
       const res = await httpPostJson(baseEndpointUrl, headers, body);
       return res;
@@ -704,7 +701,7 @@ async function extractJavaScriptPlayerCode() {
     }
 
     // ret.viewCount = map['viewCount'];
-    let views = getTextFromObject(getVideoPrimaryInfoRenderer()?.viewCount?.videoViewCountRenderer?.viewCount);
+    let views = getTextFromObject(getVideoPrimaryInfoRenderer(nextResponse)?.viewCount?.videoViewCountRenderer?.viewCount);
     if (!views) {
         views = response?.videoDetails?.viewCount;
     }
@@ -763,7 +760,7 @@ async function extractJavaScriptPlayerCode() {
     if (playerResponse?.videoDetails?.allowRatings == false) {
         ret.likeCount = 0;
     } else {
-        let topLevelButtons = getVideoPrimaryInfoRenderer()?.videoActions?.menuRenderer?.topLevelButtons;
+        let topLevelButtons = getVideoPrimaryInfoRenderer(nextResponse)?.videoActions?.menuRenderer?.topLevelButtons;
         let count = null;
         try {
             count = parseLikeCountFromLikeButtonViewModel(topLevelButtons);
@@ -783,7 +780,7 @@ async function extractJavaScriptPlayerCode() {
     // ret.dislikeCount = map['dislikeCount'];
 
     // ret.viewCountText = map['viewCountText'];
-    ret.getViewCountText = getViewCountText(response, nextResponse);
+    ret.viewCountText = getViewCountText(response, nextResponse);
 
     // ret.uploaderName = map['uploaderName'];
     ret.uploaderName = response?.videoDetails?.author
@@ -917,19 +914,19 @@ async function extractJavaScriptPlayerCode() {
     }
     // ret.videoStreams = map['videoStreams'] is List ? VideoStream.parseList(map['videoStreams']) : null;
     try {
-      ret.videoStreams = await getVideoStreams(items);
+      ret.videoStreams = await getVideoStreams({items: items, streamType: streamType});
     } catch (e) {
       console.log(e)
     }
     // ret.audioStreams = map['audioStreams'] is List ? AudioStream.parseList(map['audioStreams']) : null;
     try {
-      ret.audioStreams = await getAudioStreams(items);
+      ret.audioStreams = await getAudioStreams({items: items, streamType: streamType});
     } catch (e) {
       console.log(e)
     }
     // ret.videoOnlyStreams = map['videoOnlyStreams'] is List ? VideoStream.parseList(map['videoOnlyStreams']) : null;
     try {
-      ret.videoOnlyStreams = await getVideoOnlyStreams(items);
+      ret.videoOnlyStreams = await getVideoOnlyStreams({items: items, streamType: streamType});
     } catch (e) {
       console.log(e)
     }
@@ -1138,14 +1135,13 @@ async function extractJavaScriptPlayerCode() {
             streamType = "LIVE_STREAM";
         }
     }
-    
-      for (const overlay of videoInfo?.thumbnailOverlays || []) {
-        const style = overlay?.thumbnailOverlayTimeStatusRenderer?.style;
-        if ((style?.toUpperCase() || "") === "LIVE") {
-            streamType = "LIVE_STREAM";
-        }
+    for (const overlay of videoInfo?.thumbnailOverlays || []) {
+      const style = overlay?.thumbnailOverlayTimeStatusRenderer?.style;
+      if ((style?.toUpperCase() || "") === "LIVE") {
+          streamType = "LIVE_STREAM";
       }
-      ret.streamType = streamType;
+    }
+    ret.streamType = streamType;
     ///
     let videoId = videoInfo?.videoId;
     ret.videoId = videoId;
@@ -1202,6 +1198,12 @@ async function extractJavaScriptPlayerCode() {
         }
     }
     ret.viewCountText = viewCountText;
+    if (viewCountText) {
+      try {
+        ret.viewCount = parseInt(removeNonDigitCharacters(viewCountText), 10);
+      } catch (e) {
+      }
+    }
     ///
     let shortDescription;
     if (videoInfo?.detailedMetadataSnippets != null) {
@@ -1216,19 +1218,19 @@ async function extractJavaScriptPlayerCode() {
     // 
     let isLiveStream = false;
     if (Array.isArray(videoInfo?.badges)) {
-        for (const item of videoInfo?.badges ?? []) {
-          if (item?.metadataBadgeRenderer?.icon?.iconType === "LIVE") {
-            isLiveStream = true;
-          }
+      for (const item of videoInfo?.badges ?? []) {
+        if (item?.metadataBadgeRenderer?.icon?.iconType === "LIVE") {
+          isLiveStream = true;
         }
       }
+    }
     
-      if (Array.isArray(videoInfo?.thumbnailOverlays)) {
-        for (const item of videoInfo?.thumbnailOverlays ?? []) {
-          if (item?.thumbnailOverlayTimeStatusRenderer?.style === "LIVE") {
-            isLiveStream = true;
-          }
+    if (Array.isArray(videoInfo?.thumbnailOverlays)) {
+      for (const item of videoInfo?.thumbnailOverlays ?? []) {
+        if (item?.thumbnailOverlayTimeStatusRenderer?.style === "LIVE") {
+          isLiveStream = true;
         }
+      }
     }
     ret.isLiveStream = isLiveStream;
     return ret;
@@ -1298,22 +1300,18 @@ function getFrames(playerResponse) {
   
     if (Array.isArray(mutations) && mutations.length > 0) {
       const ret = {};
-  
       mutations.forEach(item => {
         const payload = item?.payload;
         const likeStatusEntity = payload?.likeStatusEntity;
         const subscriptionStateEntity = payload?.subscriptionStateEntity;
-  
         if (likeStatusEntity?.likeStatus && typeof likeStatusEntity.likeStatus === 'string') {
           ret.likeStatus = likeStatusEntity.likeStatus;
         } else if (subscriptionStateEntity?.subscribed !== undefined && typeof subscriptionStateEntity.subscribed === 'boolean') {
           ret.subscribed = subscriptionStateEntity.subscribed;
         }
       });
-  
       return ret;
     }
-  
     return null;
   }
 
@@ -1328,9 +1326,7 @@ function getFrames(playerResponse) {
   }
 
   const ITAG_LIST = [
-    /////////////////////////////////////////////////////
     // VIDEO     ID  Type   Format  Resolution  FPS  ////
-    /////////////////////////////////////////////////////
     {id: 17, itagType: "VIDEO", mediaFormat: "v3GPP", resolutionString: "144p"},
     {id: 36, itagType: "VIDEO", mediaFormat: "v3GPP", resolutionString: "240p"},
 
@@ -1348,9 +1344,7 @@ function getFrames(playerResponse) {
     {id: 45, itagType: "VIDEO", mediaFormat: "WEBM", resolutionString: "720p"},
     {id: 46, itagType: "VIDEO", mediaFormat: "WEBM", resolutionString: "1080p"},
 
-    /////////////id: //// type: ////////////////////////////////////////////////
     // AUDIO     id: ID   type:    ItagType          Format        Bitrate    //
-    /////////////id: //// type: ////////////////////////////////////////////////
     {id: 171, itagType: "AUDIO", mediaFormat: "WEBMA", avgBitrate: 128},
     {id: 172, itagType: "AUDIO", mediaFormat: "WEBMA", avgBitrate: 256},
     {id: 599, itagType: "AUDIO", mediaFormat: "M4A", avgBitrate: 32},
@@ -1363,8 +1357,6 @@ function getFrames(playerResponse) {
     {id: 251, itagType: "AUDIO", mediaFormat: "WEBMA_OPUS", avgBitrate: 160},
 
     /// VIDEO ONLid: Y // type: /////////////////////////////////////////
-    //           id: ID   type:    Type     Format  Resolution  FPS  ////
-    /////////////id: //// type: /////////////////////////////////////////
     {id: 160, itagType: "VIDEO_ONLY", mediaFormat: "MPEG_4", resolutionString: "144p"},
     {id: 394, itagType: "VIDEO_ONLY", mediaFormat: "MPEG_4", resolutionString: "144p"},
     {id: 133, itagType: "VIDEO_ONLY", mediaFormat: "MPEG_4", resolutionString: "240p"},
@@ -1453,19 +1445,19 @@ function getFrames(playerResponse) {
     return null;
   }
 
-  async function getAudioStreams(items) {
-    return getStreamFromItags(items, "adaptiveFormats", "AUDIO", getAudioStreamBuilderHelper(), "audio");
+  async function getAudioStreams({items, streamType}) {
+    return getStreamFromItags({items: items, streamingDataKey: "adaptiveFormats", itagTypeWanted: "AUDIO", streamBuilderHelper: getAudioStreamBuilderHelper({streamType: streamType}), message: "audio", streamType: streamType});
   }
   
-  async function getVideoStreams(items) {
-    return getStreamFromItags(items, "formats", "VIDEO", getVideoStreamBuilderHelper(false), "video");
+  async function getVideoStreams({items, streamType}) {
+    return getStreamFromItags({items: items, streamingDataKey: "formats", itagTypeWanted: "VIDEO", streamBuilderHelper: getVideoStreamBuilderHelper({isVideoOnly:false, streamType: streamType}), message: "video", streamType: streamType});
   }
   
-  async function getVideoOnlyStreams(items) {
-    return getStreamFromItags(items, "adaptiveFormats", "VIDEO_ONLY", getVideoStreamBuilderHelper(true), "video-only");
+  async function getVideoOnlyStreams({items, streamType}) {
+    return getStreamFromItags({items: items, streamingDataKey:"adaptiveFormats", itagTypeWanted: "VIDEO_ONLY", streamBuilderHelper: getVideoStreamBuilderHelper({isVideoOnly:true, streamType: streamType}), message: "video-only", streamType: streamType});
   }
 
-  function getAudioStreamBuilderHelper() {
+  function getAudioStreamBuilderHelper({streamType}) {
     return function (itagInfo) {
       const itagItem = itagInfo.itagItem;
       const audioStream = {};
@@ -1478,20 +1470,18 @@ function getFrames(playerResponse) {
       audioStream.audioTrackName = itagItem?.audioTrackName;
       audioStream.audioTrackType = itagItem?.audioTrackType;
       audioStream.itagItem = itagItem;
-      // if (
-      //   streamType === StreamType.LIVE_STREAM ||
-      //   streamType === StreamType.POST_LIVE_STREAM ||
-      //   itagInfo.isUrl === false
-      // ) {
-      //   // For YouTube videos on OTF streams and for all streams of post-live streams
-      //   // and live streams, only the DASH delivery method can be used.
-      //   audioStream.deliveryMethod = DeliveryMethod.DASH;
-      // }
+      if (
+        streamType === "LIVE_STREAM" ||
+        streamType === "POST_LIVE_STREAM" ||
+        itagInfo.isUrl === false
+      ) {
+        audioStream.deliveryMethod = "DASH";
+      }
       return audioStream;
     };
   }  
 
-  function getVideoStreamBuilderHelper(areStreamsVideoOnly) {
+  function getVideoStreamBuilderHelper({isVideoOnly, streamType}) {
     return function (itagInfo) {
       const itagItem = itagInfo.itagItem;
       const videoStream = {};
@@ -1500,30 +1490,28 @@ function getFrames(playerResponse) {
       videoStream.content = itagInfo.content;
       videoStream.isUrl = itagInfo.isUrl;
       videoStream.mediaFormat = getMediaformatByCode(itagItem?.mediaFormat);
-      videoStream.isVideoOnly = areStreamsVideoOnly;
+      videoStream.isVideoOnly = isVideoOnly;
       videoStream.itagItem = itagItem;
   
       const resolutionString = itagItem?.resolutionString || '';
       videoStream.resolution = resolutionString;
   
-      // if (
-      //   streamType !== StreamType.VIDEO_STREAM ||
-      //   itagInfo.isUrl === false
-      // ) {
-      //   // For YouTube videos on OTF streams and for all streams of post-live streams
-      //   // and live streams, only the DASH delivery method can be used.
-      //   videoStream.deliveryMethod = DeliveryMethod.DASH;
-      // }
+      if (
+        streamType !== "VIDEO_STREAM" ||
+        itagInfo.isUrl === false
+      ) {
+        videoStream.deliveryMethod = "DASH";
+      }
   
       return videoStream;
     };
   }
 
-  async function getStreamFromItags(items, streamingDataKey, itagTypeWanted, streamBuilderHelper, streamTypeExceptionMessage) {
+  async function getStreamFromItags({items, streamingDataKey, itagTypeWanted, streamBuilderHelper, message, streamType}) {
     const streamList = [];
     try {
       for (const item of items) {
-        const tags = await getStreamsFromStreamingDataKey(item.data, streamingDataKey, itagTypeWanted, item.cpn);
+        const tags = await getStreamsFromStreamingDataKey({streamingData: item.data, streamingDataKey: streamingDataKey, itagTypeWanted: itagTypeWanted, contentPlaybackNonce: item.cpn, streamType: streamType});
         for (const value of tags) {
           const stream = streamBuilderHelper(value);
           streamList.push(stream);
@@ -1534,7 +1522,7 @@ function getFrames(playerResponse) {
     return streamList;
   }
 
-  async function getStreamsFromStreamingDataKey(streamingData, streamingDataKey, itagTypeWanted, contentPlaybackNonce) {
+  async function getStreamsFromStreamingDataKey({streamingData, streamingDataKey, itagTypeWanted, contentPlaybackNonce, streamType}) {
     if (!streamingData || !streamingData[streamingDataKey]) {
       return [];
     }
@@ -1548,10 +1536,10 @@ function getFrames(playerResponse) {
         if (itagItem) {
           if (itagItem.itagType === itagTypeWanted) {
             try {
-              const itagInfo = await buildAndAddItagInfoToList(formatData, itagItem, itagItem.itagType, contentPlaybackNonce);
+              const itagInfo = await buildAndAddItagInfoToList({formatData: formatData, itagItem: itagItem, itagType: itagItem.itagType, contentPlaybackNonce: contentPlaybackNonce, streamType: streamType});
               ret.push(itagInfo);
             } catch (e) {
-              console.log(`getStreamsFromStreamingDataKey: ${e}`);
+              print('getStreamsFromStreamingDataKey error', e);
             }
           }
         }
@@ -1561,7 +1549,7 @@ function getFrames(playerResponse) {
     return ret;
   }
 
-  async function buildAndAddItagInfoToList(formatData, itagItem, itagType, contentPlaybackNonce) {
+  async function buildAndAddItagInfoToList({formatData, itagItem, itagType, contentPlaybackNonce, streamType}) {
     let streamUrl;
     let cipher;
   
@@ -1619,18 +1607,16 @@ function getFrames(playerResponse) {
       itagItem: itagItem
     };
   
-    // if (streamType === StreamType.VIDEO_STREAM) {
-    //   itagInfo.isUrl = (formatData.type || "") !== "FORMAT_STREAM_TYPE_OTF";
-    // } else {
-    //   itagInfo.isUrl = (streamType !== StreamType.POST_LIVE_STREAM);
-    // }
-  
+    if (streamType === "VIDEO_STREAM") {
+      itagInfo.isUrl = (formatData.type || "") !== "FORMAT_STREAM_TYPE_OTF";
+    } else {
+      itagInfo.isUrl = (streamType !== "POST_LIVE_STREAM");
+    }
     return itagInfo;
   }
 
   function compatParseMap(input) {
     const map = {};
-    
     input.split("&").forEach(arg => {
       const splitArg = arg.split("=");
       if (splitArg.length > 1) {
@@ -1639,31 +1625,24 @@ function getFrames(playerResponse) {
         map[splitArg[0]] = "";
       }
     });
-  
     return map;
   }
 
   async function deobfuscateSignature(obfuscatedSignature) {
-  
     await extractJavaScriptCodeIfNeeded();
-  
     if (!cachedSignatureDeobfuscationFunction) {
       try {
         cachedSignatureDeobfuscationFunction = getDeobfuscationCode(cachedJavaScriptPlayerCode);
       } catch (e) {
+        print("JS getDeobfuscationCode error", e);
       }
     }
-  
+    // Get the function from the server if it's not cached
     if (!cachedSignatureDeobfuscationFunction) {
-      // Get the function from the server if it's not cached
-    }
-  
-    if (!cachedSignatureDeobfuscationFunction) {
+      print("JS cachedSignatureDeobfuscationFunction == null");
       return null;
     }
-  
     try {
-      // Run the deobfuscation function and return the result
       let DEOBFUSCATION_FUNCTION_NAME = "deobfuscate";
       const result = runJsFunction(
         cachedSignatureDeobfuscationFunction,
@@ -1672,8 +1651,7 @@ function getFrames(playerResponse) {
       );
       return result;
     } catch (e) {
-      // Handle error if the function can't be run, though this shouldn't normally happen
-      // throw new ParsingException("Could not run signature parameter deobfuscation JavaScript function", e);
+      print("JS deobfuscateSignature error ", e);
     }
     return null;
   }
@@ -1682,6 +1660,7 @@ function getFrames(playerResponse) {
     try {
       const deobfuscationFunctionName = getDeobfuscationFunctionName(javaScriptPlayerCode);
       if (deobfuscationFunctionName == null) {
+        print("JS deobfuscationFunctionName == null");
         return null;
       }
   
@@ -1689,32 +1668,32 @@ function getFrames(playerResponse) {
       try {
         deobfuscationFunction = getDeobfuscateFunctionWithRegex(javaScriptPlayerCode, deobfuscationFunctionName);
       } catch (e) {
-        // Handle error
+        print("JS deobfuscationFunction error ", e);
       }
   
       if (deobfuscationFunction == null) {
+        print("JS deobfuscationFunction == null");
         return null;
       }
   
       // Assert the extracted deobfuscation function is valid
       const SIG_DEOBF_HELPER_OBJ_NAME_REGEX = /;([A-Za-z0-9_$]{2,})\...\(/;
-
       const helperObjectName = matchGroup1(SIG_DEOBF_HELPER_OBJ_NAME_REGEX, deobfuscationFunction);
       if (helperObjectName == null) {
+        print("JS helperObjectName == null");
         return null;
       }
   
       const helperObject = getHelperObject(javaScriptPlayerCode, helperObjectName);
       if (helperObject == null) {
+        print("JS helperObject == null");
         return null;
       }
       let DEOBFUSCATION_FUNCTION_NAME = "deobfuscate";
       const callerFunction = `function ${DEOBFUSCATION_FUNCTION_NAME}(a){return ${deobfuscationFunctionName}(a);}`;
-  
       return helperObject + deobfuscationFunction + ";" + callerFunction;
     } catch (e) {
-      // Handle error: Could not parse deobfuscation function
-      console.log(e);
+      print("JS Could not parse deobfuscation",e);
     }
   }
   
@@ -1734,7 +1713,7 @@ function getFrames(playerResponse) {
           return match[1];
         }
       } catch (e) {
-        
+        print("JS getDeobfuscationFunctionName error ", e)
       }
     }
     return null;
@@ -1746,7 +1725,6 @@ function getFrames(playerResponse) {
     const functionPattern = DEOBF_FUNC_REGEX_START + deobfuscationFunctionName + DEOBF_FUNC_REGEX_END;
     const regex = new RegExp(functionPattern);
     const match = javaScriptPlayerCode.match(regex);
-    
     if (match && match[1]) {
       return `var ${match[1]}`;
     }
@@ -1759,14 +1737,11 @@ function getFrames(playerResponse) {
     const helperPattern = SIG_DEOBF_HELPER_OBJ_REGEX_START
       + helperObjectName
       + SIG_DEOBF_HELPER_OBJ_REGEX_END;
-  
     const regex = new RegExp(helperPattern);
     const match = javaScriptPlayerCode.match(regex);
-  
     if (match) {
       return match[0].replace(/\n/g, '');
     }
-  
     return null;
   }
 
@@ -1777,10 +1752,32 @@ function getFrames(playerResponse) {
     } else {
         code = `${functionName}("${parameters}")`;
     }
-    
-    const res = eval(code);
-    return res;
+    try {
+      const res = eval(code);
+      return res;
+    } catch (e) {
+      print("runJsFunction error", e)
+    }
+    return null;
   }
+
+async function getYoutubeVisitorDataForHls() {
+    let res = await httpGet('https://www.youtube.com/', {
+      'Host': 'www.youtube.com',
+      'accept': '*/*',
+      'origin': 'https://www.youtube.com',
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15',
+    });
+    let txtBody = getTextBody(res);
+    const regExp = /"visitorData":\s*"([^"]+)"/;
+    const match = txtBody.match(regExp);
+    if (match) {
+      youtubeVisitorId = match[1];
+      print(`Extracted visitorData: `, youtubeVisitorId);
+    } else {
+      print('No match visitorData found');
+    }
+}
 
 if (typeof module !== "undefined" && module.exports) {
     module.exports = { getYoutubeStreamData };
